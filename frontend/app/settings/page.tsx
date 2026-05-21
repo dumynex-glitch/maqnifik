@@ -196,7 +196,7 @@ export default function SettingsPage() {
             </span>
           )}
           {verifyMessage && (
-            <span className={`text-sm ${verifyMessage.toLowerCase().includes('valid') ? 'text-green-600' : 'text-red-600'}`}>
+            <span className={`text-sm ${verifyDetails?.authenticated ? (verifyDetails?.authorized ? 'text-green-600' : 'text-amber-700') : 'text-red-600'}`}>
               {verifyMessage}
             </span>
           )}
@@ -204,15 +204,23 @@ export default function SettingsPage() {
 
         {verifyDetails && (
           <div className="mt-3 rounded-lg border border-gray-200 bg-gray-50 p-3">
-            <p className="text-sm text-gray-800">
-              <strong>Status:</strong> {String(verifyDetails.status_code ?? 'n/a')} {verifyDetails.reason ?? ''}
-            </p>
-            <p className="text-sm text-gray-800 mt-1">
-              <strong>Raw response from Magnific:</strong>
-            </p>
-            <pre className="mt-2 max-h-56 overflow-auto rounded bg-black text-green-300 p-3 text-xs whitespace-pre-wrap break-words">
-{verifyDetails.raw_response ? String(verifyDetails.raw_response) : 'No response body'}
-            </pre>
+            <p className="text-sm text-gray-800"><strong>Authenticated:</strong> {String(Boolean(verifyDetails.authenticated))}</p>
+            <p className="text-sm text-gray-800"><strong>Authorized for tested endpoint(s):</strong> {String(Boolean(verifyDetails.authorized))}</p>
+
+            {Array.isArray(verifyDetails.checks) && verifyDetails.checks.length > 0 && (
+              <div className="mt-2 space-y-3">
+                {verifyDetails.checks.map((check: any, idx: number) => (
+                  <div key={idx} className="rounded border border-gray-200 bg-white p-2">
+                    <p className="text-xs text-gray-700 break-all"><strong>Endpoint:</strong> {check.url}</p>
+                    <p className="text-xs text-gray-700"><strong>Status:</strong> {String(check.status_code)} {check.reason || ''}</p>
+                    <p className="text-xs text-gray-700 mt-1"><strong>Raw response:</strong></p>
+                    <pre className="mt-1 max-h-40 overflow-auto rounded bg-black text-green-300 p-2 text-xs whitespace-pre-wrap break-words">
+{check.raw_response ? String(check.raw_response) : 'No response body'}
+                    </pre>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 

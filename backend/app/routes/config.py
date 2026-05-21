@@ -153,28 +153,72 @@ async def verify_api_key_endpoint(payload: dict):
     if not api_key or not isinstance(api_key, str):
         raise HTTPException(400, "api_key is required")
 
-    url = "https://api.magnific.com/v1/resources?page=1"
     headers = {"x-magnific-api-key": api_key}
+    # Try multiple lightweight GET endpoints because some accounts may not have
+    # access to every product family even with a valid key.
+    checks = [
+        "https://api.magnific.com/v1/icons?page=1",
+        "https://api.magnific.com/v1/resources?page=1",
+    ]
+
+    responses = []
 
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
-            resp = await client.get(url, headers=headers)
+            for url in checks:
+                resp = await client.get(url, headers=headers)
+                responses.append({
+                    "url": url,
+                    "status_code": resp.status_code,
+                    "reason": resp.reason_phrase,
+                    "raw_response": resp.text,
+                    "response_headers": dict(resp.headers),
+                })
 
-        is_valid = resp.status_code < 400
+        statuses = [r["status_code"] for r in responses]
+        any_success = any(200 <= s < 300 for s in statuses)
+        any_forbidden = any(s == 403 for s in statuses)
+        all_unauthorized = all(s == 401 for s in statuses)
+
+        if any_success:
+            return {
+                "valid": True,
+                "authenticated": True,
+                "authorized": True,
+                "checks": responses,
+                "message": "API key is valid and has access to at least one endpoint."
+            }
+
+        if all_unauthorized:
+            return {
+                "valid": False,
+                "authenticated": False,
+                "authorized": False,
+                "checks": responses,
+                "message": "API key appears invalid (401 Unauthorized on all verification endpoints)."
+            }
+
+        if any_forbidden:
+            return {
+                "valid": True,
+                "authenticated": True,
+                "authorized": False,
+                "checks": responses,
+                "message": "API key is recognized but lacks permission for tested endpoint(s) (403 Forbidden)."
+            }
+
         return {
-            "valid": is_valid,
-            "status_code": resp.status_code,
-            "reason": resp.reason_phrase,
-            "raw_response": resp.text,
-            "response_headers": dict(resp.headers),
-            "message": "API key is valid" if is_valid else "API key verification failed"
+            "valid": False,
+            "authenticated": False,
+            "authorized": False,
+            "checks": responses,
+            "message": "Verification inconclusive. Check raw responses for details."
         }
     except Exception as e:
         return {
             "valid": False,
-            "status_code": None,
-            "reason": None,
-            "raw_response": None,
-            "response_headers": None,
+            "authenticated": False,
+            "authorized": False,
+            "checks": responses,
             "message": f"Verification request failed: {str(e)}"
         }
