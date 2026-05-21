@@ -1,4 +1,5 @@
 """Lip Sync routes"""
+import httpx
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -13,6 +14,11 @@ from app.services.task_manager import TaskManager
 from app.services.logger_service import logger
 
 router = APIRouter(prefix="/api/lip-sync", tags=["lip-sync"])
+
+
+def _validate_https_url(url: str | None, name: str):
+    if url and not url.startswith("https://"):
+        raise HTTPException(400, f"{name} must use HTTPS. Only HTTPS URLs are allowed.")
 
 
 @router.post("/generate", response_model=LipSyncGenerateResponse)
@@ -32,6 +38,10 @@ async def generate_lip_sync(
         raise HTTPException(400, "image_url is required for veed models")
     if request.model != "latent-sync" and not request.resolution:
         raise HTTPException(400, "resolution (720p or 480p) is required for veed models")
+
+    _validate_https_url(request.audio_url, "audio_url")
+    _validate_https_url(request.video_url, "video_url")
+    _validate_https_url(request.image_url, "image_url")
 
     result = await db.execute(
         select(ConfigModel).where(ConfigModel.key == "webhook_url")
@@ -91,6 +101,10 @@ async def generate_lip_sync(
 
     except QuotaExhaustedError as e:
         raise HTTPException(429, detail=str(e))
+    except httpx.HTTPStatusError as e:
+        resp_body = e.response.text[:1000] if e.response.text else ""
+        logger.error("Lip-sync API error", error=resp_body, status_code=e.response.status_code)
+        raise HTTPException(e.response.status_code, detail=resp_body)
     except Exception as e:
         logger.error("Lip-sync generation failed", error=str(e))
         raise HTTPException(500, detail=f"Lip-sync generation failed: {str(e)}")
