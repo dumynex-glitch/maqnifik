@@ -9,7 +9,8 @@ from app.routes import (
     gallery,
     tasks,
     logs,
-    webhooks
+    webhooks,
+    lip_sync,
 )
 
 __all__ = [
@@ -22,5 +23,6 @@ __all__ = [
     "gallery",
     "tasks",
     "logs",
-    "webhooks"
+    "webhooks",
+    "lip_sync",
 ]

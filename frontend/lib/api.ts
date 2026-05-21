@@ -234,6 +234,28 @@ export async function checkTaskStatus(taskId: string) {
   return response.json()
 }
 
+// Lip Sync API
+export async function generateLipSync(data: {
+  model: string
+  audio_url: string
+  video_url?: string
+  image_url?: string
+  resolution?: string
+  seed?: number
+  guidance_scale?: number
+}) {
+  const response = await fetch(`${API_BASE}/lip-sync/generate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  })
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Failed to generate lip-sync')
+  }
+  return response.json()
+}
+
 // Logs API
 export async function getLogs(params?: {
   level?: string

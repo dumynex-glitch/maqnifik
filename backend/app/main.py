@@ -7,7 +7,7 @@ from pathlib import Path
 import os
 
 from app.database import init_db
-from app.routes import config, dashboard, video, image, editing, audio, gallery, tasks, logs, webhooks
+from app.routes import config, dashboard, video, image, editing, audio, gallery, tasks, logs, webhooks, lip_sync
 from app.services.logger_service import logger
 
 # Create FastAPI app
@@ -37,6 +37,7 @@ app.include_router(gallery.router)
 app.include_router(tasks.router)
 app.include_router(logs.router)
 app.include_router(webhooks.router)
+app.include_router(lip_sync.router)
 
 
 @app.on_event("startup")

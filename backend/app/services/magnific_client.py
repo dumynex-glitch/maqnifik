@@ -389,6 +389,12 @@ class MagnificClient:
             "kling-v26-motion-control-std": "kling-v2-6-motion-control-std",
         }
         
+        lip_sync_endpoint_map = {
+            "latent-sync": "lip-sync/latent-sync",
+            "veed-fabric-1-0-fast": "lip-sync/veed-fabric-1-0-fast",
+            "veed-fabric-1-0": "lip-sync/veed-fabric-1-0",
+        }
+
         audio_endpoint_map = {
             "elevenlabs-turbo-v2-5": "voiceover/elevenlabs-turbo-v2-5",
             "sound-effects": "sound-effects",
@@ -408,6 +414,9 @@ class MagnificClient:
                 endpoint = f"/ai/mystic/{task_id}"
             else:
                 endpoint = f"/ai/text-to-image/{ep_service}/{task_id}"
+        elif service in lip_sync_endpoint_map:
+            ep_service = lip_sync_endpoint_map[service]
+            endpoint = f"/ai/{ep_service}/{task_id}"
         elif service in audio_endpoint_map:
             ep_service = audio_endpoint_map[service]
             endpoint = f"/ai/{ep_service}/{task_id}"
@@ -415,6 +424,38 @@ class MagnificClient:
             endpoint = f"/ai/{service}/{task_id}"
         
         return await self._request("GET", endpoint, api_key)
+
+    # Lip Sync
+    async def create_lip_sync(
+        self,
+        api_key: str,
+        model: str,
+        audio_url: str,
+        video_url: Optional[str] = None,
+        image_url: Optional[str] = None,
+        resolution: Optional[str] = None,
+        seed: Optional[int] = None,
+        guidance_scale: Optional[float] = None,
+        return_private_url: Optional[bool] = None,
+        **kwargs
+    ) -> Dict[str, Any]:
+        """Create lip-sync task"""
+        endpoint = f"/ai/lip-sync/{model}"
+        data = {"audio_url": audio_url, **kwargs}
+        if video_url:
+            data["video_url"] = video_url
+        if image_url:
+            data["image_url"] = image_url
+        if resolution:
+            data["resolution"] = resolution
+        if seed is not None:
+            data["seed"] = seed
+        if guidance_scale is not None:
+            data["guidance_scale"] = guidance_scale
+        if return_private_url is not None:
+            data["return_private_url"] = return_private_url
+        logger.info("Creating lip-sync task", model=model)
+        return await self._request("POST", endpoint, api_key, data)
 
     async def verify_api_key(self, api_key: str) -> Dict[str, Any]:
         """Verify API key by calling a lightweight authenticated endpoint."""

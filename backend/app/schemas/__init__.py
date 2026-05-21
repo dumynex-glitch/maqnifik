@@ -177,6 +177,24 @@ class LogsResponse(BaseModel):
     total: int
 
 
+# Lip Sync schemas
+class LipSyncGenerateRequest(BaseModel):
+    model: str  # latent-sync, veed-fabric-1-0-fast, veed-fabric-1-0
+    video_url: Optional[str] = None  # required for latent-sync
+    image_url: Optional[str] = None  # required for veed
+    audio_url: str
+    resolution: Optional[str] = None  # 720p or 480p, required for veed
+    seed: Optional[int] = None
+    guidance_scale: Optional[float] = None
+    return_private_url: Optional[bool] = None
+
+
+class LipSyncGenerateResponse(BaseModel):
+    task_id: str
+    status: str
+    message: str
+
+
 # Webhook payload schema
 class WebhookPayload(BaseModel):
     task_id: str

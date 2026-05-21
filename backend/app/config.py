@@ -90,6 +90,11 @@ DAILY_LIMITS = {
     "sound-effects": 125,
     "elevenlabs-turbo-v2-5": 125,
     "audio-isolation": 125,
+
+    # Lip Sync
+    "latent-sync": 20,
+    "veed-fabric-1-0-fast": 20,
+    "veed-fabric-1-0": 20,
     
     # Other
     "image-to-prompt": 125,
