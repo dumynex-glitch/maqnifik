@@ -277,8 +277,12 @@ class MagnificClient:
         self,
         api_key: str,
         text: str,
+        voice_id: str,
         webhook_url: str,
-        voice_id: Optional[str] = None,
+        stability: Optional[float] = None,
+        similarity_boost: Optional[float] = None,
+        speed: Optional[float] = None,
+        use_speaker_boost: Optional[bool] = None,
         **kwargs
     ) -> Dict[str, Any]:
         """Create voiceover"""
@@ -286,14 +290,21 @@ class MagnificClient:
         
         data = {
             "text": text,
+            "voice_id": voice_id,
             "webhook_url": webhook_url,
             **kwargs
         }
         
-        if voice_id:
-            data["voice_id"] = voice_id
+        if stability is not None:
+            data["stability"] = stability
+        if similarity_boost is not None:
+            data["similarity_boost"] = similarity_boost
+        if speed is not None:
+            data["speed"] = speed
+        if use_speaker_boost is not None:
+            data["use_speaker_boost"] = use_speaker_boost
         
-        logger.info("Creating voiceover task")
+        logger.info("Creating voiceover task", voice_id=voice_id)
         
         return await self._request("POST", endpoint, api_key, data)
     
@@ -378,6 +389,12 @@ class MagnificClient:
             "kling-v26-motion-control-std": "kling-v2-6-motion-control-std",
         }
         
+        audio_endpoint_map = {
+            "elevenlabs-turbo-v2-5": "voiceover/elevenlabs-turbo-v2-5",
+            "sound-effects": "sound-effects",
+            "audio-isolation": "audio-isolation",
+        }
+        
         # Determine endpoint based on service type
         if service in video_endpoint_map:
             ep_service = video_endpoint_map[service]
@@ -391,6 +408,9 @@ class MagnificClient:
                 endpoint = f"/ai/mystic/{task_id}"
             else:
                 endpoint = f"/ai/text-to-image/{ep_service}/{task_id}"
+        elif service in audio_endpoint_map:
+            ep_service = audio_endpoint_map[service]
+            endpoint = f"/ai/{ep_service}/{task_id}"
         else:
             endpoint = f"/ai/{service}/{task_id}"
         

@@ -96,9 +96,14 @@ class ImageEditResponse(BaseModel):
 
 # Audio generation schemas
 class AudioGenerateRequest(BaseModel):
-    prompt: str = Field(..., min_length=1, max_length=1000)
+    prompt: str = Field(..., min_length=1, max_length=40000)
     type: str  # voiceover, sound-effects, audio-isolation
-    duration: Optional[float] = Field(default=5.0, ge=0.5, le=22.0)
+    duration: Optional[float] = Field(default=None, ge=0.5, le=22.0)
+    voice_id: Optional[str] = None
+    stability: Optional[float] = Field(default=None, ge=0, le=1)
+    similarity_boost: Optional[float] = Field(default=None, ge=0, le=1)
+    speed: Optional[float] = Field(default=None, ge=0.7, le=1.2)
+    use_speaker_boost: Optional[bool] = None
 
 
 class AudioGenerateResponse(BaseModel):

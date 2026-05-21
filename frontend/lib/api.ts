@@ -153,6 +153,11 @@ export async function generateAudio(data: {
   prompt: string
   type: string
   duration?: number
+  voice_id?: string
+  stability?: number
+  similarity_boost?: number
+  speed?: number
+  use_speaker_boost?: boolean
 }) {
   const response = await fetch(`${API_BASE}/audio/generate`, {
     method: 'POST',

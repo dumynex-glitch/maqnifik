@@ -62,10 +62,17 @@ async def generate_audio(
         
         # Call appropriate method based on type
         if request.type == "voiceover":
+            if not request.voice_id:
+                raise HTTPException(400, "voice_id is required for voiceover generation")
             response = await magnific_client.create_voiceover(
                 api_key=api_key,
                 text=request.prompt,
-                webhook_url=webhook_url
+                voice_id=request.voice_id,
+                webhook_url=webhook_url,
+                stability=request.stability,
+                similarity_boost=request.similarity_boost,
+                speed=request.speed,
+                use_speaker_boost=request.use_speaker_boost,
             )
         elif request.type == "sound-effects":
             response = await magnific_client.create_sound_effect(
@@ -88,7 +95,12 @@ async def generate_audio(
             request_params={
                 "prompt": request.prompt,
                 "type": request.type,
-                "duration": request.duration
+                "duration": request.duration,
+                "voice_id": request.voice_id,
+                "stability": request.stability,
+                "similarity_boost": request.similarity_boost,
+                "speed": request.speed,
+                "use_speaker_boost": request.use_speaker_boost,
             }
         )
         
