@@ -151,15 +151,13 @@ export default function VideoPage() {
           <label className="block text-sm mb-1">
             Image Input <span className="text-xs text-gray-500">({is25 || isMotion ? 'Required' : 'Optional'})</span>
           </label>
-          {!isMotion && !isKling3 && (
+          {!isMotion && (
             <div className="flex gap-2 mb-2">
               <button type="button" onClick={() => { setImageMode('url'); setImageUrl('') }} className={`px-3 py-1 rounded ${imageMode === 'url' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}>URL</button>
               <button type="button" onClick={() => { setImageMode('upload'); setImageUrl('') }} className={`px-3 py-1 rounded ${imageMode === 'upload' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}>Upload File</button>
             </div>
           )}
           {isMotion ? (
-            <input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} className="w-full border rounded p-2" placeholder="https://..." />
-          ) : isKling3 ? (
             <input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} className="w-full border rounded p-2" placeholder="https://..." />
           ) : imageMode === 'url' ? (
             <input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} className="w-full border rounded p-2" placeholder="https://..." />
