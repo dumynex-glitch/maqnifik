@@ -45,7 +45,7 @@ class TaskResponse(BaseModel):
 class VideoGenerateRequest(BaseModel):
     prompt: Optional[str] = Field(default="", max_length=2500)
     image_url: Optional[str] = None
-    duration: int = Field(default=5, ge=5, le=10)
+    duration: int = Field(default=5, ge=3, le=15)
     mode: Optional[str] = Field(default="text-to-video")
     model: str = Field(default="kling-v26-pro")
     negative_prompt: Optional[str] = Field(default=None, max_length=2500)
@@ -54,6 +54,11 @@ class VideoGenerateRequest(BaseModel):
     generate_audio: Optional[bool] = Field(default=None)
     video_url: Optional[str] = None
     character_orientation: Optional[str] = Field(default=None)
+    start_image_url: Optional[str] = None
+    end_image_url: Optional[str] = None
+    multi_shot: Optional[bool] = None
+    shot_type: Optional[str] = None
+    multi_prompt: Optional[str] = None
 
 
 class VideoGenerateResponse(BaseModel):

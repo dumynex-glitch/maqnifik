@@ -75,6 +75,22 @@ class MagnificClient:
         **kwargs
     ) -> Dict[str, Any]:
         """Create video generation task"""
+        is_kling3 = service in {"kling-v3-pro", "kling-v3-std"}
+
+        if is_kling3:
+            endpoint = f"/ai/video/{service}"
+            data = {"webhook_url": webhook_url, **kwargs}
+            if prompt:
+                data["prompt"] = prompt
+            data["duration"] = str(duration)
+            if image_url:
+                data["start_image_url"] = image_url
+            if kwargs.get("start_image_url"):
+                data["start_image_url"] = kwargs.pop("start_image_url")
+            if kwargs.get("end_image_url"):
+                data["end_image_url"] = kwargs.pop("end_image_url")
+            return await self._request("POST", endpoint, api_key, data)
+
         service_endpoint = {
             "kling-v25-pro": "kling-v2-5-pro",
             "kling-v26-pro": "kling-v2-6-pro",
@@ -103,7 +119,7 @@ class MagnificClient:
 
         if not is_motion_control:
             data["duration"] = str(duration) if service in {"kling-v25-pro", "kling-v26-pro"} else duration
-        
+
         if image_url:
             if is_motion_control:
                 data["image_url"] = image_url
@@ -354,6 +370,8 @@ class MagnificClient:
         }
         
         video_endpoint_map = {
+            "kling-v3-pro": "kling-v3-pro",
+            "kling-v3-std": "kling-v3-std",
             "kling-v25-pro": "kling-v2-5-pro",
             "kling-v26-pro": "kling-v2-6-pro",
             "kling-v26-motion-control-pro": "kling-v2-6-motion-control-pro",
@@ -363,7 +381,10 @@ class MagnificClient:
         # Determine endpoint based on service type
         if service in video_endpoint_map:
             ep_service = video_endpoint_map[service]
-            endpoint = f"/ai/image-to-video/{ep_service}/{task_id}"
+            if service in {"kling-v3-pro", "kling-v3-std"}:
+                endpoint = f"/ai/video/{ep_service}/{task_id}"
+            else:
+                endpoint = f"/ai/image-to-video/{ep_service}/{task_id}"
         elif service in image_endpoint_map:
             ep_service = image_endpoint_map[service]
             if ep_service == "mystic":

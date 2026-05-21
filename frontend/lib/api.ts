@@ -79,6 +79,11 @@ export async function generateVideo(data: {
   aspect_ratio?: string
   generate_audio?: boolean
   character_orientation?: 'video' | 'image'
+  start_image_url?: string
+  end_image_url?: string
+  multi_shot?: boolean
+  shot_type?: string
+  multi_prompt?: string
 }) {
   const response = await fetch(`${API_BASE}/video/generate`, {
     method: 'POST',

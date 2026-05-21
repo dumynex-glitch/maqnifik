@@ -26,6 +26,8 @@ CACHE_TTL_HOURS = 24  # Cache results for 24 hours
 # Rate limits (Free tier from Magnific docs)
 DAILY_LIMITS = {
     # Video
+    "kling-v3-pro": 100,
+    "kling-v3-std": 150,
     "kling-v26-std": 5,
     "kling-v26-pro": 11,
     "kling-v26-motion-control-std": 5,

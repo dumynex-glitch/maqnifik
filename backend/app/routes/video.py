@@ -23,6 +23,8 @@ async def generate_video(
     """Generate video using Kling 2.6 Standard (text-to-video or image-to-video)"""
 
     allowed_models = {
+        "kling-v3-pro",
+        "kling-v3-std",
         "kling-v26-pro",
         "kling-v25-pro",
         "kling-v26-motion-control-pro",
@@ -75,6 +77,11 @@ async def generate_video(
             aspect_ratio=request.aspect_ratio,
             generate_audio=request.generate_audio,
             character_orientation=request.character_orientation,
+            start_image_url=request.start_image_url,
+            end_image_url=request.end_image_url,
+            multi_shot=request.multi_shot,
+            shot_type=request.shot_type,
+            multi_prompt=request.multi_prompt,
         )
         
         # Increment quota
@@ -98,6 +105,11 @@ async def generate_video(
                 "generate_audio": request.generate_audio,
                 "video_url": request.video_url,
                 "character_orientation": request.character_orientation,
+                "start_image_url": request.start_image_url,
+                "end_image_url": request.end_image_url,
+                "multi_shot": request.multi_shot,
+                "shot_type": request.shot_type,
+                "multi_prompt": request.multi_prompt,
             }
         )
         
