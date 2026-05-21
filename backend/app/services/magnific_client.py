@@ -40,11 +40,13 @@ class MagnificClient:
                 return response.json()
                 
         except httpx.HTTPStatusError as e:
+            resp_body = e.response.text[:2000] if e.response.text else ""
             logger.error(
                 "Magnific API HTTP error",
                 status_code=e.response.status_code,
                 error=str(e),
-                endpoint=endpoint
+                endpoint=endpoint,
+                response_body=resp_body
             )
             raise
         except httpx.RequestError as e:
