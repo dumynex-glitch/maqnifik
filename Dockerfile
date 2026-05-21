@@ -1,33 +1,33 @@
-FROM python:3.11-slim
+FROM node:20-bookworm-slim AS frontend-builder
 
-# Install Node.js
-RUN apt-get update && \
-    apt-get install -y curl && \
-    curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
-    apt-get install -y nodejs && \
-    rm -rf /var/lib/apt/lists/*
+WORKDIR /build/frontend
+COPY frontend/package*.json ./
+RUN npm ci
+COPY frontend/ ./
+RUN npm run build
 
-WORKDIR /app
 
-# Copy project
-COPY . .
+FROM python:3.11-slim AS runtime
 
-# Build frontend
-WORKDIR /app/frontend
-RUN npm install && npm run build
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
 
-# Copy to backend
-RUN cp -r out ../backend/static
-
-# Install Python dependencies
 WORKDIR /app/backend
+
+# Install Python dependencies first for better layer caching
+COPY backend/requirements.txt ./requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Create data directories
+# Copy backend application code only
+COPY backend/app ./app
+COPY backend/run.py ./run.py
+
+# Copy built frontend static assets from builder stage
+COPY --from=frontend-builder /build/frontend/out ./static
+
+# Create runtime data directories
 RUN mkdir -p data/cache data/logs
 
-# Expose port
 EXPOSE 8000
 
-# Run
 CMD ["python", "run.py"]

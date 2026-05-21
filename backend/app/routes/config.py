@@ -52,9 +52,11 @@ async def save_api_keys(
         
         if existing:
             existing.is_active = True
+            existing.key_value = api_key
         else:
             new_key = ApiKey(
                 key_hash=key_hash,
+                key_value=api_key,
                 key_masked=mask_api_key(api_key),
                 is_active=True
             )
@@ -178,6 +180,7 @@ async def verify_api_key_endpoint(payload: dict):
         statuses = [r["status_code"] for r in responses]
         any_success = any(200 <= s < 300 for s in statuses)
         any_forbidden = any(s == 403 for s in statuses)
+        any_rate_limited = any(s == 429 for s in statuses)
         all_unauthorized = all(s == 401 for s in statuses)
 
         if any_success:
@@ -196,6 +199,15 @@ async def verify_api_key_endpoint(payload: dict):
                 "authorized": False,
                 "checks": responses,
                 "message": "API key appears invalid (401 Unauthorized on all verification endpoints)."
+            }
+
+        if any_rate_limited:
+            return {
+                "valid": True,
+                "authenticated": True,
+                "authorized": False,
+                "checks": responses,
+                "message": "API key is valid but rate-limited (429). Your free trial quota may be exhausted. Upgrade at https://www.magnific.com/developers/dashboard/billing"
             }
 
         if any_forbidden:

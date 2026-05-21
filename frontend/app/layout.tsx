@@ -23,6 +23,7 @@ export default function RootLayout({
             <Link className="text-gray-700 hover:text-blue-700" href="/image">Image</Link>
             <Link className="text-gray-700 hover:text-blue-700" href="/editing">Editing</Link>
             <Link className="text-gray-700 hover:text-blue-700" href="/audio">Audio</Link>
+            <Link className="text-gray-700 hover:text-blue-700" href="/tasks">Tasks</Link>
             <Link className="text-gray-700 hover:text-blue-700" href="/gallery">Gallery</Link>
             <Link className="text-gray-700 hover:text-blue-700" href="/logs">Logs</Link>
           </nav>

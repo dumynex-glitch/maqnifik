@@ -56,7 +56,7 @@ async def upscale_image(
         await quota_manager.increment_quota(key_hash, service)
         
         task = await task_manager.create_task(
-            task_id=response.get("task_id") or response.get("id"),
+            task_id=response.get("data", {}).get("task_id") or response.get("task_id") or response.get("id"),
             service=service,
             type="editing",
             api_key_hash=key_hash,
@@ -116,7 +116,7 @@ async def remove_background(
         await quota_manager.increment_quota(key_hash, service)
         
         task = await task_manager.create_task(
-            task_id=response.get("task_id") or response.get("id"),
+            task_id=response.get("data", {}).get("task_id") or response.get("task_id") or response.get("id"),
             service=service,
             type="editing",
             api_key_hash=key_hash,
@@ -174,7 +174,7 @@ async def relight_image(
         await quota_manager.increment_quota(key_hash, service)
         
         task = await task_manager.create_task(
-            task_id=response.get("task_id") or response.get("id"),
+            task_id=response.get("data", {}).get("task_id") or response.get("task_id") or response.get("id"),
             service=service,
             type="editing",
             api_key_hash=key_hash,
@@ -234,7 +234,7 @@ async def style_transfer(
         await quota_manager.increment_quota(key_hash, service)
         
         task = await task_manager.create_task(
-            task_id=response.get("task_id") or response.get("id"),
+            task_id=response.get("data", {}).get("task_id") or response.get("task_id") or response.get("id"),
             service=service,
             type="editing",
             api_key_hash=key_hash,

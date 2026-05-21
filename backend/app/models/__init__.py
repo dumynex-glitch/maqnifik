@@ -11,6 +11,7 @@ class ApiKey(Base):
     
     id = Column(Integer, primary_key=True, autoincrement=True)
     key_hash = Column(String(64), nullable=False, unique=True, index=True)
+    key_value = Column(Text, nullable=False)  # Plaintext API key
     key_masked = Column(String(20), nullable=False)  # Last 4 chars for display
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)

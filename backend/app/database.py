@@ -32,3 +32,9 @@ async def init_db():
     """Initialize database tables"""
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        # Migration: add key_value column to api_keys if missing
+        try:
+            from sqlalchemy import text
+            await conn.execute(text("ALTER TABLE api_keys ADD COLUMN key_value TEXT"))
+        except Exception:
+            pass  # Column already exists

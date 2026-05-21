@@ -82,7 +82,7 @@ async def generate_video(
         
         # Save task
         task = await task_manager.create_task(
-            task_id=response.get("task_id") or response.get("id"),
+            task_id=response.get("data", {}).get("task_id") or response.get("task_id") or response.get("id"),
             service=service,
             type="video",
             api_key_hash=key_hash,

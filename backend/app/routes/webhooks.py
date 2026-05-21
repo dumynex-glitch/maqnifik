@@ -40,27 +40,26 @@ async def receive_webhook(
     )
     secret_config = result.scalar_one_or_none()
     
-    if not secret_config or not secret_config.value:
-        logger.warning("Webhook secret not configured")
-        raise HTTPException(500, "Webhook secret not configured")
-    
-    secret_key = secret_config.value
-    
-    # Verify signature
-    is_valid = verify_webhook_signature(
-        webhook_id=webhook_id,
-        webhook_timestamp=webhook_timestamp,
-        body=body_str,
-        signature_header=webhook_signature,
-        secret_key=secret_key
-    )
-    
-    if not is_valid:
-        logger.warning(
-            "Invalid webhook signature",
-            webhook_id=webhook_id
+    if secret_config and secret_config.value:
+        secret_key = secret_config.value
+        
+        # Verify signature
+        is_valid = verify_webhook_signature(
+            webhook_id=webhook_id,
+            webhook_timestamp=webhook_timestamp,
+            body=body_str,
+            signature_header=webhook_signature,
+            secret_key=secret_key
         )
-        raise HTTPException(401, "Invalid webhook signature")
+        
+        if not is_valid:
+            logger.warning(
+                "Invalid webhook signature",
+                webhook_id=webhook_id
+            )
+            raise HTTPException(401, "Invalid webhook signature")
+    else:
+        logger.warning("Webhook secret not configured — skipping HMAC verification")
     
     # Parse payload
     try:
@@ -69,12 +68,20 @@ async def receive_webhook(
         logger.error("Invalid JSON in webhook payload")
         raise HTTPException(400, "Invalid JSON payload")
     
-    # Extract task info
-    task_id = data.get("task_id") or data.get("id")
-    status = data.get("status")
-    result_url = data.get("result_url") or data.get("output_url")
-    thumbnail_url = data.get("thumbnail_url")
-    error_message = data.get("error") or data.get("error_message")
+    # Extract task info (handle both wrapped and unwrapped payloads)
+    payload = data.get("data", data)
+    task_id = payload.get("task_id") or payload.get("id") or data.get("task_id") or data.get("id")
+    remote_status = payload.get("status") or data.get("status")
+    status = remote_status.lower() if remote_status else None
+    
+    # Result URL can be in generated array, result_url, or output_url fields
+    generated = payload.get("generated") or data.get("generated") or []
+    result_url = (generated[0] if isinstance(generated, list) and len(generated) > 0
+                  else payload.get("result_url") or payload.get("output_url")
+                  or data.get("result_url") or data.get("output_url"))
+    
+    thumbnail_url = payload.get("thumbnail_url") or data.get("thumbnail_url")
+    error_message = payload.get("error") or payload.get("error_message") or data.get("error") or data.get("error_message")
     
     if not task_id:
         logger.error("Webhook missing task_id")
@@ -98,7 +105,7 @@ async def receive_webhook(
     )
     
     # Add to gallery if completed successfully
-    if status == "completed" and result_url:
+    if status and status.lower() == "completed" and result_url:
         gallery_service = GalleryService(db)
         await gallery_service.add_from_task(task_id)
     

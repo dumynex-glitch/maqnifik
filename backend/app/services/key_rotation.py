@@ -33,9 +33,7 @@ class KeyRotationService:
             logger.warning("No active API keys found")
             return []
         
-        # Note: In production, keys should be encrypted in DB
-        # For now, we store hash and reconstruct from config
-        self._keys_cache = [(k.key_hash, k.key_hash) for k in keys]
+        self._keys_cache = [(k.key_value, k.key_hash) for k in keys]
         
         logger.info(f"Loaded {len(self._keys_cache)} active API keys")
         

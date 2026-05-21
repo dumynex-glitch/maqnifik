@@ -67,7 +67,7 @@ async def generate_image(
         
         # Save task
         task = await task_manager.create_task(
-            task_id=response.get("task_id") or response.get("id"),
+            task_id=response.get("data", {}).get("task_id") or response.get("task_id") or response.get("id"),
             service=service,
             type="image",
             api_key_hash=key_hash,

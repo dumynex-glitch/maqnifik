@@ -216,6 +216,14 @@ export async function getTask(taskId: string) {
   return response.json()
 }
 
+export async function checkTaskStatus(taskId: string) {
+  const response = await fetch(`${API_BASE}/tasks/${taskId}/check-status`, {
+    method: 'POST'
+  })
+  if (!response.ok) throw new Error('Failed to check task status')
+  return response.json()
+}
+
 // Logs API
 export async function getLogs(params?: {
   level?: string

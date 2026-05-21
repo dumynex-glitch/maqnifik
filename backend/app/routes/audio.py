@@ -81,7 +81,7 @@ async def generate_audio(
         await quota_manager.increment_quota(key_hash, service)
         
         task = await task_manager.create_task(
-            task_id=response.get("task_id") or response.get("id"),
+            task_id=response.get("data", {}).get("task_id") or response.get("task_id") or response.get("id"),
             service=service,
             type="audio",
             api_key_hash=key_hash,

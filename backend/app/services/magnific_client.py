@@ -132,7 +132,26 @@ class MagnificClient:
         **kwargs
     ) -> Dict[str, Any]:
         """Create image generation task"""
-        endpoint = f"/ai/text-to-image/{service}"
+        service_endpoint = {
+            "flux-pro": "flux-pro-v1-1",
+            "flux-pro-v2": "flux-2-pro",
+            "flux-dev": "flux-dev",
+            "flux-2-pro": "flux-2-pro",
+            "flux-2-turbo": "flux-2-turbo",
+            "hyperflux": "hyperflux",
+            "mystic": "mystic",
+            "mystic-ultra": "mystic",
+            "mystic-v2": "mystic",
+            "mystic-lightning": "mystic",
+            "imagen4-fast": "imagen-4-fast",
+            "imagen4-ultra": "imagen-4-ultra",
+            "seedream": "seedream",
+            "seedream-v4": "seedream-v4",
+            "nano-banana-pro": "nano-banana-pro",
+            "nano-banana-pro-flash": "nano-banana-pro-flash",
+        }.get(service, service)
+        
+        endpoint = f"/ai/text-to-image/{service_endpoint}" if service_endpoint != "mystic" else "/ai/mystic"
         
         data = {
             "prompt": prompt,
@@ -154,7 +173,13 @@ class MagnificClient:
         **kwargs
     ) -> Dict[str, Any]:
         """Upscale image"""
-        endpoint = f"/ai/image-{service.replace('upscaler-', 'upscaler')}"
+        service_endpoint = {
+            "upscaler": "image-upscaler",
+            "upscaler-precision": "image-upscaler-precision",
+            "upscaler-precision-v2": "image-upscaler-precision",
+            "upscaler-classic": "image-upscaler",
+        }.get(service, service)
+        endpoint = f"/ai/{service_endpoint}"
         
         data = {
             "image": image_url,
@@ -174,11 +199,10 @@ class MagnificClient:
         **kwargs
     ) -> Dict[str, Any]:
         """Remove background from image"""
-        endpoint = "/ai/remove-background"
+        endpoint = "/ai/beta/remove-background"
         
         data = {
-            "image": image_url,
-            "webhook_url": webhook_url,
+            "image_url": image_url,
             **kwargs
         }
         
@@ -269,8 +293,8 @@ class MagnificClient:
         endpoint = "/ai/sound-effects"
         
         data = {
-            "prompt": prompt,
-            "duration": duration,
+            "text": prompt,
+            "duration_seconds": duration,
             "webhook_url": webhook_url,
             **kwargs
         }
@@ -309,14 +333,43 @@ class MagnificClient:
         task_id: str
     ) -> Dict[str, Any]:
         """Get task status"""
+        # Map internal service names to API endpoint names
+        image_endpoint_map = {
+            "flux-pro": "flux-pro-v1-1",
+            "flux-pro-v2": "flux-2-pro",
+            "flux-dev": "flux-dev",
+            "flux-2-pro": "flux-2-pro",
+            "flux-2-turbo": "flux-2-turbo",
+            "hyperflux": "hyperflux",
+            "mystic": "mystic",
+            "mystic-ultra": "mystic",
+            "mystic-v2": "mystic",
+            "mystic-lightning": "mystic",
+            "imagen4-fast": "imagen-4-fast",
+            "imagen4-ultra": "imagen-4-ultra",
+            "seedream": "seedream",
+            "seedream-v4": "seedream-v4",
+            "nano-banana-pro": "nano-banana-pro",
+            "nano-banana-pro-flash": "nano-banana-pro-flash",
+        }
+        
+        video_endpoint_map = {
+            "kling-v25-pro": "kling-v2-5-pro",
+            "kling-v26-pro": "kling-v2-6-pro",
+            "kling-v26-motion-control-pro": "kling-v2-6-motion-control-pro",
+            "kling-v26-motion-control-std": "kling-v2-6-motion-control-std",
+        }
+        
         # Determine endpoint based on service type
-        if "video" in service or "kling" in service or "wan" in service or "runway" in service:
-            if "image-to-video" in service:
-                endpoint = f"/ai/image-to-video/{service}/{task_id}"
+        if service in video_endpoint_map:
+            ep_service = video_endpoint_map[service]
+            endpoint = f"/ai/image-to-video/{ep_service}/{task_id}"
+        elif service in image_endpoint_map:
+            ep_service = image_endpoint_map[service]
+            if ep_service == "mystic":
+                endpoint = f"/ai/mystic/{task_id}"
             else:
-                endpoint = f"/ai/text-to-video/{service}/{task_id}"
-        elif "image" in service or "mystic" in service or "flux" in service:
-            endpoint = f"/ai/text-to-image/{service}/{task_id}"
+                endpoint = f"/ai/text-to-image/{ep_service}/{task_id}"
         else:
             endpoint = f"/ai/{service}/{task_id}"
         
