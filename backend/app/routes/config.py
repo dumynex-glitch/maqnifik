@@ -1,0 +1,180 @@
+"""Configuration routes for API keys and webhook settings"""
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+from typing import List
+import hashlib
+
+from app.database import get_db
+from app.models import ApiKey, Config as ConfigModel
+from app.schemas import ApiKeyConfigRequest, ApiKeyConfigResponse
+from app.services.logger_service import logger
+from app.utils import hash_api_key, mask_api_key
+from app.services.magnific_client import magnific_client
+import httpx
+
+router = APIRouter(prefix="/api/config", tags=["config"])
+
+
+@router.post("/keys", response_model=ApiKeyConfigResponse)
+async def save_api_keys(
+    config: ApiKeyConfigRequest,
+    db: AsyncSession = Depends(get_db)
+):
+    """Save API keys and webhook configuration"""
+    
+    if len(config.keys) > 5:
+        raise HTTPException(400, "Maximum 5 API keys allowed")
+    
+    if len(config.keys) == 0:
+        raise HTTPException(400, "At least 1 API key required")
+    
+    # Deactivate all existing keys
+    result = await db.execute(select(ApiKey))
+    existing_keys = result.scalars().all()
+    for key in existing_keys:
+        key.is_active = False
+    
+    # Add new keys
+    key_hashes = []
+    for api_key in config.keys:
+        if not api_key.strip():
+            continue
+        
+        key_hash = hash_api_key(api_key)
+        key_hashes.append(key_hash)
+        
+        # Check if key already exists
+        result = await db.execute(
+            select(ApiKey).where(ApiKey.key_hash == key_hash)
+        )
+        existing = result.scalar_one_or_none()
+        
+        if existing:
+            existing.is_active = True
+        else:
+            new_key = ApiKey(
+                key_hash=key_hash,
+                key_masked=mask_api_key(api_key),
+                is_active=True
+            )
+            db.add(new_key)
+    
+    # Save webhook URL
+    if config.webhook_url:
+        result = await db.execute(
+            select(ConfigModel).where(ConfigModel.key == "webhook_url")
+        )
+        webhook_config = result.scalar_one_or_none()
+        
+        if webhook_config:
+            webhook_config.value = config.webhook_url
+        else:
+            webhook_config = ConfigModel(
+                key="webhook_url",
+                value=config.webhook_url
+            )
+            db.add(webhook_config)
+    
+    # Save webhook secret
+    if config.webhook_secret:
+        result = await db.execute(
+            select(ConfigModel).where(ConfigModel.key == "webhook_secret")
+        )
+        secret_config = result.scalar_one_or_none()
+        
+        if secret_config:
+            secret_config.value = config.webhook_secret
+        else:
+            secret_config = ConfigModel(
+                key="webhook_secret",
+                value=config.webhook_secret
+            )
+            db.add(secret_config)
+    
+    await db.commit()
+    
+    logger.info(f"Configuration saved: {len(key_hashes)} API keys")
+    
+    # Return masked keys
+    result = await db.execute(
+        select(ApiKey).where(ApiKey.is_active == True)
+    )
+    active_keys = result.scalars().all()
+    
+    return ApiKeyConfigResponse(
+        keys=[key.key_masked for key in active_keys],
+        webhook_url=config.webhook_url,
+        key_count=len(active_keys)
+    )
+
+
+@router.get("/keys", response_model=ApiKeyConfigResponse)
+async def get_api_keys(db: AsyncSession = Depends(get_db)):
+    """Get current API key configuration (masked)"""
+    
+    # Get active keys
+    result = await db.execute(
+        select(ApiKey).where(ApiKey.is_active == True)
+    )
+    active_keys = result.scalars().all()
+    
+    # Get webhook URL
+    result = await db.execute(
+        select(ConfigModel).where(ConfigModel.key == "webhook_url")
+    )
+    webhook_config = result.scalar_one_or_none()
+    webhook_url = webhook_config.value if webhook_config else None
+    
+    return ApiKeyConfigResponse(
+        keys=[key.key_masked for key in active_keys],
+        webhook_url=webhook_url,
+        key_count=len(active_keys)
+    )
+
+
+@router.get("/webhook-secret")
+async def get_webhook_secret(db: AsyncSession = Depends(get_db)):
+    """Get webhook secret (for internal use)"""
+    result = await db.execute(
+        select(ConfigModel).where(ConfigModel.key == "webhook_secret")
+    )
+    secret_config = result.scalar_one_or_none()
+    
+    return {
+        "webhook_secret": secret_config.value if secret_config else None
+    }
+
+
+@router.post("/verify-key")
+async def verify_api_key_endpoint(payload: dict):
+    """Verify a provided API key with Magnific."""
+    api_key = payload.get("api_key", "")
+    if not api_key or not isinstance(api_key, str):
+        raise HTTPException(400, "api_key is required")
+
+    url = "https://api.magnific.com/v1/resources?page=1"
+    headers = {"x-magnific-api-key": api_key}
+
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            resp = await client.get(url, headers=headers)
+
+        is_valid = resp.status_code < 400
+        return {
+            "valid": is_valid,
+            "status_code": resp.status_code,
+            "reason": resp.reason_phrase,
+            "raw_response": resp.text,
+            "response_headers": dict(resp.headers),
+            "message": "API key is valid" if is_valid else "API key verification failed"
+        }
+    except Exception as e:
+        return {
+            "valid": False,
+            "status_code": None,
+            "reason": None,
+            "raw_response": None,
+            "response_headers": None,
+            "message": f"Verification request failed: {str(e)}"
+        }
